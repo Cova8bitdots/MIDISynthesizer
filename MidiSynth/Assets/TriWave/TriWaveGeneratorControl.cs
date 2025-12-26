@@ -23,12 +23,16 @@ namespace TriWave
             Observable.Merge(Frequency.Skip(1).Select(_ => 0),
                 IsActive.Skip(1).Select(_ => 0))
                 .Where(_ => m_AudioSource.isPlaying)
-                .Where(_ => ControlContext.builtIn.Exists(m_AudioSource.generatorHandle))
+                .Where(_ => ControlContext.builtIn.Exists(m_AudioSource.generatorInstance))
                 .Subscribe(_ =>
                     {
-                        var handle = m_AudioSource.generatorHandle;
-                        ControlContext.builtIn.SendData(handle,
-                            new TriangleWaveGenerator.Processor.FrequencyData(Frequency.CurrentValue, IsActive.CurrentValue));
+                        var handle = m_AudioSource.generatorInstance;
+                        var message =
+                            new TriangleWaveGenerator.Processor.FrequencyData(Frequency.CurrentValue,
+                                IsActive.CurrentValue);
+                        ControlContext.builtIn.SendMessage(handle,
+                            ref message
+                            );
                     }
                 ).AddTo(this);
         }
