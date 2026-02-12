@@ -7,7 +7,9 @@ namespace CustomAudioPipeline.Controller
     [AudioControllerMessageSupport(typeof(WaveformSquareNode.SquareWaveMessage))]
     public sealed class SquareNodeController : BaseNodeController
     {
-        [SerializeField, Range(1.0f, 20000.0f)] private float frequency = 440.0f;
+        [SerializeField] 
+        [FrequencyControl(minHz: 20.0f, maxHz: 20000.0f, minMidi: 24, maxMidi: 96)]
+        private float frequency = 440.0f;
         [SerializeField, Range(0.01f, 0.99f)] private float duty = 0.5f;
         [SerializeField] private bool isActive = true;
 

@@ -7,7 +7,9 @@ namespace CustomAudioPipeline.Controller
     [AudioControllerMessageSupport(typeof(WaveformTriangleNode.TriangleWaveMessage))]
     public sealed class TriangleNodeController : BaseNodeController
     {
-        [SerializeField, Range(1.0f, 20000.0f)] private float frequency = 440.0f;
+        [SerializeField]
+        [FrequencyControl(minHz: 20.0f, maxHz: 20000.0f, minMidi: 24, maxMidi: 96)]
+        private float frequency = 440.0f;
         [SerializeField] private bool isActive = true;
 
         private float _lastFrequency;

@@ -7,7 +7,9 @@ namespace CustomAudioPipeline.Controller
     [AudioControllerMessageSupport(typeof(WaveformSineNode.SineMessage))]
     public sealed class SineNodeController : BaseNodeController
     {
-        [SerializeField] private float frequency = 440.0f;
+        [SerializeField] 
+        [FrequencyControl(minHz: 20.0f, maxHz: 20000.0f, minMidi: 24, maxMidi: 96)]
+        private float frequency = 440.0f;
         [SerializeField] private bool isActive = true;
 
         private float _lastFreq;
