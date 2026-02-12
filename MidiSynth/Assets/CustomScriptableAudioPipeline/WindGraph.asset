@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ff45bcaceba514eebb736d25593d6f1e, type: 3}
-  m_Name: NoiseGraph
+  m_Name: WindGraph
   m_EditorClassIdentifier: Assembly-CSharp::CustomAudioPipeline.Nodes.AudioGraphDefinition
   slots:
   - guid: 771c17b21f404011a200108067b42b6a
@@ -19,7 +19,7 @@ MonoBehaviour:
     inputGuids: []
   - guid: ba521daf45ee4928b91163cbc085fc97
     label: 
-    node: {fileID: 11400000, guid: bf760e17d1ed94ffcaf2420ef4513d4e, type: 2}
+    node: {fileID: 11400000, guid: b6d98852051604c5880fc3614e447ed6, type: 2}
     inputGuids:
     - 771c17b21f404011a200108067b42b6a
   outputGuid: ba521daf45ee4928b91163cbc085fc97
