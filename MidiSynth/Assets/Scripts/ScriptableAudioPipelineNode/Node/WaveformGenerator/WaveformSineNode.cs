@@ -6,7 +6,7 @@ using UnityEngine.Audio;
 namespace CustomAudioPipeline.Nodes
 {
     [AudioNodeMessageSupport(typeof(SineMessage))]
-    [CreateAssetMenu(fileName = "WaveformSineNode", menuName = "CustomAudioPipeline/Nodes/Waveform/Sine")]
+    [CreateAssetMenu(fileName = "WaveformSineNode", menuName = "Audio/Node/Waveform/Sine")]
     public sealed class WaveformSineNode : BaseAudioNode
     {
         [SerializeField] private float initialFrequency = 440.0f;
