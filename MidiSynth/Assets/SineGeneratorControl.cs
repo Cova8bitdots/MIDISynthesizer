@@ -18,14 +18,15 @@ public class SineGeneratorControl : MonoBehaviour
 
     void Update()
     {
-        var handle = m_AudioSource.generatorHandle;
+        var handle = m_AudioSource.generatorInstance;
 
         if (!m_AudioSource.isPlaying
             || !ControlContext.builtIn.Exists(handle)
             || Mathf.Approximately(frequency, m_PreviousFrequency))
             return;
 
-        ControlContext.builtIn.SendData(handle, new SineGenerator.Processor.FrequencyData(frequency));
+        var message = new SineGenerator.Processor.FrequencyData(frequency);
+        ControlContext.builtIn.SendMessage(handle, ref message);
         m_PreviousFrequency = frequency;
     }
 }

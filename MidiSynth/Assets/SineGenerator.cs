@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.Audio;
 
 [CreateAssetMenu(fileName = "SineGenerator", menuName = "Sample/Create SineGenerator asset", order = 2)]
-public class SineGenerator : ScriptableObject, IGeneratorDefinition
+public class SineGenerator : ScriptableObject, IAudioGenerator
 {
     public float initialFrequency;
 
@@ -13,21 +13,21 @@ public class SineGenerator : ScriptableObject, IGeneratorDefinition
     public bool isRealtime => true;
     public DiscreteTime? length => null;
 
-    public Generator CreateRuntime(ControlContext context, DSPConfiguration? nestedConfiguration,
-        ControlContext.ProcessorCreationParameters creationParameters)
+    public GeneratorInstance CreateInstance(ControlContext context, AudioFormat? nestedFormat,
+        ProcessorInstance.CreationParameters creationParameters)
     {
         return Processor.Allocate(context, initialFrequency);
     }
 
     [BurstCompile(CompileSynchronously = true)]
-    internal struct Processor : Generator.IProcessor
+    internal struct Processor : GeneratorInstance.IRealtime
     {
         const float k_Tau = Mathf.PI * 2;
 
         float m_Frequency;
         float m_Phase;
 
-        public static Generator Allocate(ControlContext context, float frequency)
+        public static GeneratorInstance Allocate(ControlContext context, float frequency)
         {
             return context.AllocateGenerator(new Processor(frequency), new Control());
         }
@@ -36,16 +36,16 @@ public class SineGenerator : ScriptableObject, IGeneratorDefinition
         public bool isRealtime => true;
         public DiscreteTime? length => null;
 
-        Generator.Setup m_Setup;
+        GeneratorInstance.Setup m_Setup;
 
         Processor(float frequency)
         {
             m_Frequency = frequency;
             m_Phase = 0.0f;
-            m_Setup = new Generator.Setup();
+            m_Setup = new GeneratorInstance.Setup();
         }
 
-        public void Update(UnityEngine.Audio.Processor.UpdatedDataContext context, UnityEngine.Audio.Processor.Pipe pipe)
+        public void Update(ProcessorInstance.UpdatedDataContext context, ProcessorInstance.Pipe pipe)
         {
             var enumerator = pipe.GetAvailableData(context);
 
@@ -58,7 +58,7 @@ public class SineGenerator : ScriptableObject, IGeneratorDefinition
 			}
         }
 
-        public Generator.Result Process(in ProcessingContext ctx, UnityEngine.Audio.Processor.Pipe pipe, ChannelBuffer buffer, Generator.Arguments args)
+        public GeneratorInstance.Result Process(in RealtimeContext ctx, ProcessorInstance.Pipe pipe, ChannelBuffer buffer, GeneratorInstance.Arguments args)
         {
             for (var frame = 0; frame < buffer.frameCount; frame++)
             {
@@ -73,25 +73,25 @@ public class SineGenerator : ScriptableObject, IGeneratorDefinition
             return buffer.frameCount;
         }
 
-        struct Control : Generator.IControl<Processor>
+        struct Control : GeneratorInstance.IControl<Processor>
         {
-            public void Configure(ControlContext context, ref Processor generator, in DSPConfiguration config, out Generator.Setup setup, ref Generator.Properties p)
+            public void Configure(ControlContext context, ref Processor generator, in AudioFormat config, out GeneratorInstance.Setup setup, ref GeneratorInstance.Properties p)
             {
-                generator.m_Setup = new Generator.Setup(AudioSpeakerMode.Mono, config.sampleRate);
+                generator.m_Setup = new GeneratorInstance.Setup(AudioSpeakerMode.Mono, config.sampleRate);
                 setup = generator.m_Setup;
             }
 
             public void Dispose(ControlContext context, ref Processor processor) { }
 
-            public void Update(ControlContext context, UnityEngine.Audio.Processor.Pipe pipe) { }
+            public void Update(ControlContext context, ProcessorInstance.Pipe pipe) { }
 
-            public UnityEngine.Audio.Processor.MessageStatus OnMessage(ControlContext context, UnityEngine.Audio.Processor.Pipe pipe, UnityEngine.Audio.Processor.Message message)
+            public ProcessorInstance.Response OnMessage(ControlContext context, ProcessorInstance.Pipe pipe, ProcessorInstance.Message message)
             {
-                return UnityEngine.Audio.Processor.MessageStatus.Unhandled;
+                return ProcessorInstance.Response.Unhandled;
             }
         }
 
-        internal struct FrequencyData
+        internal readonly struct FrequencyData
         {
             public readonly float Value;
 

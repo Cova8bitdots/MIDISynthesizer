@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.Audio;
 
 [CreateAssetMenu(fileName = "SquareWaveGenerator", menuName = "Audio/Generator/SquareWaveGenerator")]
-public class SquareWaveGenerator : ScriptableObject, IGeneratorDefinition
+public class SquareWaveGenerator : ScriptableObject, IAudioGenerator
 {
     public float initialFrequency;
     public float initRatio;
@@ -14,14 +14,14 @@ public class SquareWaveGenerator : ScriptableObject, IGeneratorDefinition
     public bool isRealtime => true;
     public DiscreteTime? length => null;
 
-    public Generator CreateRuntime(ControlContext context, DSPConfiguration? nestedConfiguration,
-        ControlContext.ProcessorCreationParameters creationParameters)
+    public GeneratorInstance CreateInstance(ControlContext context, AudioFormat? nestedFormat,
+        ProcessorInstance.CreationParameters creationParameters)
     {
         return Processor.Allocate(context, initialFrequency, Mathf.Clamp01(initRatio));
     }
 
     [BurstCompile(CompileSynchronously = true)]
-    internal struct Processor : Generator.IProcessor
+    internal struct Processor : GeneratorInstance.IRealtime
     {
         const float k_Tau = Mathf.PI * 2;
 
@@ -37,7 +37,7 @@ public class SquareWaveGenerator : ScriptableObject, IGeneratorDefinition
         bool m_zeroCrossStop ;      // trueでNoteOffはゼロクロス優先
         float m_lastSample;           // 直前サンプル（ゼロクロス判定用）
         
-        public static Generator Allocate(ControlContext context, float frequency, float dutyRatio)
+        public static GeneratorInstance Allocate(ControlContext context, float frequency, float dutyRatio)
         {
             return context.AllocateGenerator(new Processor(frequency, dutyRatio), new Control());
         }
@@ -46,14 +46,14 @@ public class SquareWaveGenerator : ScriptableObject, IGeneratorDefinition
         public bool isRealtime => true;
         public DiscreteTime? length => null;
 
-        Generator.Setup m_Setup;
+        GeneratorInstance.Setup m_Setup;
 
         Processor(float frequency, float dutyRatio,float attackMs = 1.0f, float releaseMs = 3.0f, bool zeroCrossStop = false)
         {
             m_Frequency = frequency;
             m_Phase = 0.0f;
             m_DutyRatio = dutyRatio;
-            m_Setup = new Generator.Setup();
+            m_Setup = new GeneratorInstance.Setup();
             m_IsActive = false;
             m_attackSamples  = Mathf.Max(1, Mathf.RoundToInt(attackMs  * 0.001f * m_Setup.sampleRate));
             m_releaseSamples = Mathf.Max(1, Mathf.RoundToInt(releaseMs * 0.001f * m_Setup.sampleRate));
@@ -63,7 +63,7 @@ public class SquareWaveGenerator : ScriptableObject, IGeneratorDefinition
             m_lastSample = 0f;
         }
 
-        public void Update(UnityEngine.Audio.Processor.UpdatedDataContext context, UnityEngine.Audio.Processor.Pipe pipe)
+        public void Update(ProcessorInstance.UpdatedDataContext context, ProcessorInstance.Pipe pipe)
         {
             var enumerator = pipe.GetAvailableData(context);
 
@@ -80,8 +80,8 @@ public class SquareWaveGenerator : ScriptableObject, IGeneratorDefinition
 			}
         }
 
-        public Generator.Result Process(in ProcessingContext ctx,
-            UnityEngine.Audio.Processor.Pipe pipe, ChannelBuffer buffer, Generator.Arguments args)
+        public GeneratorInstance.Result Process(in RealtimeContext ctx,
+            ProcessorInstance.Pipe pipe, ChannelBuffer buffer, GeneratorInstance.Arguments args)
         {
             int frames = buffer.frameCount;
             int channels = buffer.channelCount;
@@ -162,21 +162,28 @@ public class SquareWaveGenerator : ScriptableObject, IGeneratorDefinition
         }
 
 
-        struct Control : Generator.IControl<Processor>
+        struct Control : GeneratorInstance.IControl<Processor>
         {
-            public void Configure(ControlContext context, ref Processor generator, in DSPConfiguration config, out Generator.Setup setup, ref Generator.Properties p)
+            public void Configure(ControlContext context, ref Processor generator, in AudioFormat config, out GeneratorInstance.Setup setup, ref GeneratorInstance.Properties p)
             {
-                generator.m_Setup = new Generator.Setup(AudioSpeakerMode.Mono, config.sampleRate);
+                generator.m_Setup = new GeneratorInstance.Setup(AudioSpeakerMode.Mono, config.sampleRate);
                 setup = generator.m_Setup;
             }
 
             public void Dispose(ControlContext context, ref Processor processor) { }
 
-            public void Update(ControlContext context, UnityEngine.Audio.Processor.Pipe pipe) { }
+            public void Update(ControlContext context, ProcessorInstance.Pipe pipe) { }
 
-            public UnityEngine.Audio.Processor.MessageStatus OnMessage(ControlContext context, UnityEngine.Audio.Processor.Pipe pipe, UnityEngine.Audio.Processor.Message message)
+            public ProcessorInstance.Response OnMessage(ControlContext context, ProcessorInstance.Pipe pipe, ProcessorInstance.Message message)
             {
-                return UnityEngine.Audio.Processor.MessageStatus.Unhandled;
+                if (message.Is<WaveData>())
+                {
+                    pipe.SendData(context, message.Get<WaveData>());
+
+                    return ProcessorInstance.Response.Handled;
+                }
+                
+                return ProcessorInstance.Response.Unhandled;
             }
         }
 
