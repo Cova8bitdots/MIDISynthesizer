@@ -228,11 +228,7 @@ namespace CustomAudioPipeline.Nodes
 
                 public void Dispose(ControlContext context, ref Processor processor)
                 {
-                    // ★ ネスト child を破棄（リーク防止）
-                    if (processor.hasUpstream)
-                    {
-                        context.Destroy(processor.upstream);
-                    }
+                    // Don't dispose upstream.processor, system will dispose upstream twice which causes error
                 }
 
                 public void Update(ControlContext context, ProcessorInstance.Pipe pipe)
